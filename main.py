@@ -2,7 +2,7 @@ import pygame, random
 
 
 class Board:
-    def init(self):
+    def __init__(self):
         self.num = -1
         # это список с кортежами всех существующих кирпичей в тетрисе
         # первый элемент - буква кирпича, форма которого похожа на него
@@ -24,6 +24,8 @@ class Board:
         self.top = 10
         # это размер каждого квадрата
         self.cell_size = 35
+        self.score = 0
+        self.game = True
 
     def render(self, screen):
         for i in range(self.height):
@@ -51,44 +53,83 @@ class Board:
         self.num += 1
         temp = [i for i in self.bricks_dict]
         self.next_brick = random.choice(temp)
-        # тут просто определяю тип кирпича и его координаты
+        # тут просто определяю тип кирпича и его координаты, а также проверяю, можно ли вообще создать кирпич
         if self.next_brick == "I":
             # это число будет определять будет определять в по какому x заспавнится кирпичик
             self.random_x = random.randint(1, 10)
             for i in range(1, 5):
+                if self.board[i - 1][self.random_x - 1] != 0:
+                    self.game = False
+                    break
                 self.board[i - 1][self.random_x - 1] = "I" + str(self.num)
         elif self.next_brick == "J":
             self.random_x = random.randint(2, 10)
             for i in range(1, 4):
+                if self.board[i - 1][self.random_x - 1] != 0:
+                    self.game = False
+                    return
                 self.board[i - 1][self.random_x - 1] = "J" + str(self.num)
+            if self.board[2][self.random_x - 2] != 0:
+                    self.game = False
+                    return
             self.board[2][self.random_x - 2] = "J" + str(self.num)
         elif self.next_brick == "L":
             self.random_x = random.randint(1, 9)
             for i in range(1, 4):
+                if self.board[i - 1][self.random_x - 1] != 0:
+                    self.game = False
+                    return
                 self.board[i - 1][self.random_x - 1] = "L" + str(self.num)
+            if self.board[2][self.random_x] != 0:
+                    self.game = False
+                    return
             self.board[2][self.random_x] = "L" + str(self.num)
         elif self.next_brick == "O":
             self.random_x = random.randint(1, 9)
             for i in range(0, 2):
+                if self.board[0][self.random_x + i - 1] != 0:
+                    self.game = False
+                    return
                 self.board[0][self.random_x + i - 1] = "O" + str(self.num)
             for i in range(0, 2):
+                if self.board[1][self.random_x + i - 1] != 0:
+                    self.game = False
+                    return
                 self.board[1][self.random_x + i - 1] = "O" + str(self.num)
         elif self.next_brick == "S":
             self.random_x = random.randint(2, 9)
             for i in range(0, 2):
+                if self.board[0][self.random_x + i - 1] != 0:
+                    self.game = False
+                    return
                 self.board[0][self.random_x + i - 1] = "S" + str(self.num)
             for i in range(0, 2):
+                if self.board[1][self.random_x + i - 2] != 0:
+                    self.game = False
+                    return
                 self.board[1][self.random_x + i - 2] = "S" + str(self.num)
         elif self.next_brick == "T":
             self.random_x = random.randint(1, 8)
             for i in range(0, 3):
+                if self.board[0][self.random_x + i - 1] != 0:
+                    self.game = False
+                    return
                 self.board[0][self.random_x + i - 1] = "T" + str(self.num)
+            if self.board[1][self.random_x] != 0:
+                    self.game = False
+                    return
             self.board[1][self.random_x] = "T" + str(self.num)
         elif self.next_brick == "Z":
             self.random_x = random.randint(1, 8)
             for i in range(0, 2):
+                if self.board[0][self.random_x + i - 1] != 0:
+                    self.game = False
+                    return
                 self.board[0][self.random_x + i - 1] = "Z" + str(self.num)
             for i in range(0, 2):
+                if self.board[1][self.random_x + i] != 0:
+                    self.game = False
+                    return
                 self.board[1][self.random_x + i] = "Z" + str(self.num)
     # функция, которая будет обновлять поле каждый тик
     def update_field(self):
@@ -144,14 +185,70 @@ class Board:
                 for j in range(8, -1, -1):
                     if self.board[i][j] != 0 and self.board[i][j][1:] == str(self.num) and flag:
                         self.board[i][j], self.board[i][j + 1] = self.board[i][j + 1], self.board[i][j]
+    # удаление заполненных рядов и начисление за них баллов
+    def delet_rows(self):
+        count = 0
+        last_row = False
+        deleted = False
+        self.first_row = False
+        for i in range(20):
+            if not 0 in self.board[i]:
+                if not self.first_row:
+                    self.first_row = i
+                if not last_row:
+                    last_row = True
+                    if count == 1:
+                        self.score += 100
+                    elif count == 2:
+                        self.score += 300
+                    elif count == 3:
+                        self.score += 700
+                    elif count == 4:
+                        self.score += 1500
+                    count = 1
+                else:
+                    count += 1
+                deleted = True
+                for j in range(10):
+                    self.board[i][j] = 0
+            else:
+                last_row = False
+        if count == 1:
+            self.score += 100
+        elif count == 2:
+            self.score += 300
+        elif count == 3:
+            self.score += 700
+        elif count == 4:
+            self.score += 1500
+        if deleted:
+            self.update_rows()
+
+    # обновление рядов именно при удалении
+    def update_rows(self):
+        for i in range(self.first_row, -1, -1):
+            for j in range(10):
+                if self.board[i][j] != 0 and self.board[i][j][1:]:
+                    self.board[i][j], self.board[i + 1][j] = self.board[i + 1][j], self.board[i][j]
     
+    # проверка может ли идти игра
+    def check_game(self):
+        if self.game:
+            return True
+        else:
+            return False
+    
+    def end_game(self):
+        return self.score
+
+
 pygame.init()
 board = Board()
 pygame.display.set_caption('Тетрис')
 size = width, height = 500, 800
 screen = pygame.display.set_mode(size)
 screen.fill(pygame.Color((255, 255, 255)))
-fps = 7
+fps = 3
 ticks = 1
 running = True
 clock = pygame.time.Clock()
@@ -159,6 +256,7 @@ board.render(screen)
 while running:
     # я ввел условие, которое будет вызывать функцию спавна не каждый тик, а только когда предыдущий блок остановился
     if ticks == 1:
+        board.delet_rows()
         board.spawn_brick()
         ticks = 0
     board.render(screen)
@@ -171,17 +269,22 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if flag:
-            # быстрое падение блока
+            # быстрое падение блока на ЛКМ
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 fps = 30
                 while board.update_field() == True:
                     continue
                 ticks = 1
-                fps = 7
+                fps = 3
             # сдвиг блока влево
             if event.type == pygame.KEYDOWN and event.key == 97:
                 board.move_brick(97)
             # сдвиг блока вправо
             if event.type == pygame.KEYDOWN and event.key == 100:
                 board.move_brick(100)
+    if not board.check_game():
+        # должна останавливаться игра
+        running = False
+        # вывод результата
+        print(board.end_game())
     pygame.display.flip()
