@@ -50,6 +50,8 @@ class Board:
                                         (self.left + partx, self.top + party, self.cell_size, self.cell_size), width=3)
     # функция, которая будет создавать кирпичи в self.board
     def spawn_brick(self):
+        self.move = 1
+        self.angle = 1
         self.num += 1
         temp = [i for i in self.bricks_dict]
         self.next_brick = random.choice(temp)
@@ -70,8 +72,8 @@ class Board:
                     return
                 self.board[i - 1][self.random_x - 1] = "J" + str(self.num)
             if self.board[2][self.random_x - 2] != 0:
-                    self.game = False
-                    return
+                self.game = False
+                return
             self.board[2][self.random_x - 2] = "J" + str(self.num)
         elif self.next_brick == "L":
             self.random_x = random.randint(1, 9)
@@ -185,8 +187,89 @@ class Board:
                 for j in range(8, -1, -1):
                     if self.board[i][j] != 0 and self.board[i][j][1:] == str(self.num) and flag:
                         self.board[i][j], self.board[i][j + 1] = self.board[i][j + 1], self.board[i][j]
-    # удаление заполненных рядов и начисление за них баллов
-    def delet_rows(self):
+    
+    def rotate_brick(self):
+        flag = True
+        temp = []
+        # этими циклом я определяю координаты блока 
+        for o in range(20):
+            for n in range(10):
+                if self.board[o][n] != 0 and self.board[o][n][1:] == str(self.num):
+                    letter = self.board[o][n][0]
+                    temp.append([o, n])
+        temp = sorted(temp)
+        min_x = min([i[1] for i in temp])
+        min_y = min([i[0] for i in temp])
+        max_x = max([i[1] for i in temp])
+        max_y = max([i[0] for i in temp])
+        matrix = []
+        matrix_copy = []
+        for i in range(20):
+            matrix_temp = []
+            for j in range(10):
+                if (i >= min_y and i <= max_y) and (j >= min_x and j <= max_x):
+                    if self.board[i][j] != 0 and self.board[i][j][0] != letter:
+                        flag = False
+                        break
+                    matrix_temp.append(self.board[i][j])
+            if matrix_temp:
+                matrix.append(matrix_temp)
+        if flag:
+            length = len(matrix[0])
+            for i in range(length):
+                matrix_temp = []
+                for j in range(len(matrix)):
+                    matrix_temp.append(matrix[j][length - i - 1])
+                matrix_copy.append(matrix_temp)
+            matrix = matrix_copy
+            if self.move == 1:
+                    if letter == "I":
+                        min_x -= 1
+                    elif letter == "J":
+                        min_x -= 1
+                    elif letter == "L":
+                        min_y += 1
+                    elif letter == "S":
+                        min_x += 1
+                    elif letter == "T":
+                        min_x += 1
+                        min_y -= 1
+                    elif letter == "Z":
+                        min_x += 1
+            elif self.move == 0:
+                if letter == "I":
+                    min_x += 1
+                    min_y += 1
+                elif letter == "J":
+                    min_x += 1
+                    min_y -= 1
+                elif letter == "L":
+                    min_x += 1
+                    min_y -= 1
+                elif letter == "S":
+                    min_x -= 1
+                elif letter == "T":
+                    min_x -= 1
+                elif letter == "Z":
+                    min_x -= 1
+            for i in range(len(matrix)):
+                    for j in range(len(matrix[i])):
+                        if i + min_y <= 0 or j + min_x <= 0 or i + min_y > 18 or j + min_x > 9 or (self.board[i + min_y][j + min_x] != 0 and self.board[i + min_y][j + min_x][1:] != str(self.num)):
+                            flag = False
+            if flag:
+                for i in range(20):
+                    for j in range(10):
+                        if self.board[i][j] != 0 and self.board[i][j][1:] == str(self.num):
+                            self.board[i][j] = 0
+                for i in range(len(matrix)):
+                    for j in range(len(matrix[i])):
+                        self.board[i + min_y][j + min_x], matrix[i][j] = matrix[i][j], self.board[i + min_y][j + min_x]
+                if self.move == 1:
+                    self.move = 2
+                elif self.move == 2:
+                    self.move = 1
+        # удаление заполненных рядов и начисление за них баллов
+    def delete_rows(self):
         count = 0
         last_row = False
         deleted = False
@@ -223,8 +306,7 @@ class Board:
             self.score += 1500
         if deleted:
             self.update_rows()
-
-    # обновление рядов именно при удалении
+# обновление рядов именно при удалении
     def update_rows(self):
         for i in range(self.first_row, -1, -1):
             for j in range(10):
@@ -256,7 +338,7 @@ board.render(screen)
 while running:
     # я ввел условие, которое будет вызывать функцию спавна не каждый тик, а только когда предыдущий блок остановился
     if ticks == 1:
-        board.delet_rows()
+        board.delete_rows()
         board.spawn_brick()
         ticks = 0
     board.render(screen)
@@ -276,6 +358,9 @@ while running:
                     continue
                 ticks = 1
                 fps = 3
+            # разворот блока
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+                board.rotate_brick()
             # сдвиг блока влево
             if event.type == pygame.KEYDOWN and event.key == 97:
                 board.move_brick(97)
