@@ -51,7 +51,8 @@ class Board:
     # функция, которая будет создавать кирпичи в self.board
     def spawn_brick(self):
         self.move = 1
-        self.angle = 1
+        self.angle_x = 1
+        self.angle_y = 1
         self.num += 1
         temp = [i for i in self.bricks_dict]
         self.next_brick = random.choice(temp)
@@ -187,7 +188,7 @@ class Board:
                 for j in range(8, -1, -1):
                     if self.board[i][j] != 0 and self.board[i][j][1:] == str(self.num) and flag:
                         self.board[i][j], self.board[i][j + 1] = self.board[i][j + 1], self.board[i][j]
-    
+    # функция разворота блока
     def rotate_brick(self):
         flag = True
         temp = []
@@ -198,12 +199,14 @@ class Board:
                     letter = self.board[o][n][0]
                     temp.append([o, n])
         temp = sorted(temp)
+        # крайние точки матрицы блока
         min_x = min([i[1] for i in temp])
         min_y = min([i[0] for i in temp])
         max_x = max([i[1] for i in temp])
         max_y = max([i[0] for i in temp])
         matrix = []
         matrix_copy = []
+        # проверяю, нет ли клеток других блоков в моей матрице
         for i in range(20):
             matrix_temp = []
             for j in range(10):
@@ -216,59 +219,99 @@ class Board:
                 matrix.append(matrix_temp)
         if flag:
             length = len(matrix[0])
+            # циклами разворачиваю матрицу на 90 градусов
             for i in range(length):
                 matrix_temp = []
                 for j in range(len(matrix)):
                     matrix_temp.append(matrix[j][length - i - 1])
                 matrix_copy.append(matrix_temp)
             matrix = matrix_copy
-            if self.move == 1:
-                    if letter == "I":
-                        min_x -= 1
-                    elif letter == "J":
-                        min_x -= 1
-                    elif letter == "L":
-                        min_y += 1
-                    elif letter == "S":
-                        min_x += 1
-                    elif letter == "T":
-                        min_x += 1
-                        min_y -= 1
-                    elif letter == "Z":
-                        min_x += 1
-            elif self.move == 0:
-                if letter == "I":
-                    min_x += 1
-                    min_y += 1
-                elif letter == "J":
-                    min_x += 1
-                    min_y -= 1
-                elif letter == "L":
-                    min_x += 1
-                    min_y -= 1
-                elif letter == "S":
-                    min_x -= 1
-                elif letter == "T":
-                    min_x -= 1
-                elif letter == "Z":
-                    min_x -= 1
+            # проверяю можно ли будет вставить матрицу на предыдущее место с нужным смещением
             for i in range(len(matrix)):
                     for j in range(len(matrix[i])):
-                        if i + min_y <= 0 or j + min_x <= 0 or i + min_y > 18 or j + min_x > 9 or (self.board[i + min_y][j + min_x] != 0 and self.board[i + min_y][j + min_x][1:] != str(self.num)):
+                        if i + min_y < 0 or j + min_x <= 0 or i + min_y > 18 or j + min_x > 9 or (self.board[i + min_y][j + min_x] != 0 and self.board[i + min_y][j + min_x][1:] != str(self.num)):
                             flag = False
             if flag:
+                # тут я определяю смещение для матрицы отдельно для каждого блока
+                # в зависимости от того поварачивается блок по x или y, и вправо или влево
+                if self.move == 1:
+                    if self.angle_x == 1:
+                        if letter == "I":
+                            min_x -= 1
+                            min_y += 1
+                        elif letter == "J":
+                            min_y += 1
+                        elif letter == "L":
+                            min_x -= 1
+                        elif letter == "T":
+                            min_x += 1
+                            min_y -= 1
+                    elif self.angle_x == -1:
+                        if letter == "I":
+                            min_x -= 1
+                            min_y += 1
+                        elif letter == "J":
+                            min_x -= 1
+                        elif letter == "L":
+                            min_y += 1
+                        elif letter == "S":
+                            min_x += 1
+                            min_y -= 1
+                        elif letter == "Z":
+                            min_x += 1
+                            min_y -= 1
+                    # меняю разворот вправо или влево
+                    if self.angle_x == -1:
+                        self.angle_x = 1
+                    elif self.angle_x == 1:
+                        self.angle_x = -1
+                elif self.move == 0:
+                    if self.angle_y == 1:
+                        if letter == "I":
+                            min_x += 1
+                            min_y -= 1
+                        elif letter == "J":
+                            min_y -= 1
+                            min_x += 1
+                        elif letter == "S":
+                            min_y += 1
+                        elif letter == "T":
+                            min_x -= 1
+                        elif letter == "Z":
+                            min_y += 1
+                    elif self.angle_y == -1:
+                        if letter == "I":
+                            min_x += 1
+                            min_y -= 1
+                        elif letter == "L":
+                            min_x += 1
+                            min_y -= 1
+                        elif letter == "S":
+                            min_x -= 1
+                        elif letter == "Z":
+                            min_x -= 1
+                        elif letter == "T":
+                            min_y += 1
+                    # меняю разворот вправо или влево
+                    if self.angle_y == -1:
+                        self.angle_y = 1
+                    elif self.angle_y == 1:
+                        self.angle_y = -1
+                # очищаю предыдущее место матрицы
                 for i in range(20):
                     for j in range(10):
                         if self.board[i][j] != 0 and self.board[i][j][1:] == str(self.num):
                             self.board[i][j] = 0
+                # вставляю в поле развернутую матрицу
                 for i in range(len(matrix)):
                     for j in range(len(matrix[i])):
                         self.board[i + min_y][j + min_x], matrix[i][j] = matrix[i][j], self.board[i + min_y][j + min_x]
-                if self.move == 1:
-                    self.move = 2
-                elif self.move == 2:
+                # меняю разворот по x или y
+                if self.move == 0:
                     self.move = 1
-        # удаление заполненных рядов и начисление за них баллов
+                elif self.move == 1:
+                    self.move = 0
+    # удаление заполненных рядов и начисление за них баллов
     def delete_rows(self):
         count = 0
         last_row = False
@@ -319,7 +362,7 @@ class Board:
             return True
         else:
             return False
-    
+    # вывод итоговых очков
     def end_game(self):
         return self.score
 
@@ -330,7 +373,7 @@ pygame.display.set_caption('Тетрис')
 size = width, height = 500, 800
 screen = pygame.display.set_mode(size)
 screen.fill(pygame.Color((255, 255, 255)))
-fps = 3
+fps = 4
 ticks = 1
 running = True
 clock = pygame.time.Clock()
@@ -341,12 +384,10 @@ while running:
         board.delete_rows()
         board.spawn_brick()
         ticks = 0
-    board.render(screen)
     # если блок остановился, то будет запускаться следующий
     flag = board.update_field()
     if  flag == False:
         ticks = 1
-    clock.tick(fps)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -357,7 +398,7 @@ while running:
                 while board.update_field() == True:
                     continue
                 ticks = 1
-                fps = 3
+                fps = 4
             # разворот блока
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
                 board.rotate_brick()
@@ -372,4 +413,6 @@ while running:
         running = False
         # вывод результата
         print(board.end_game())
+    clock.tick(fps)
+    board.render(screen)
     pygame.display.flip()
