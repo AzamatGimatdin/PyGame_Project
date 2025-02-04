@@ -1,6 +1,132 @@
-import pygame, random
+import pygame
+import random
 
 
+pygame.init()
+size = width, height = 500, 800
+screen = pygame.display.set_mode(size)
+font = pygame.font.SysFont("Arial", 72)
+small_font = pygame.font.SysFont("Arial", 48) 
+clock = pygame.time.Clock()
+
+screen.fill((0, 0, 0))
+
+
+class Button:
+    def __init__(self, y, text, action):
+        self.rect = pygame.Rect((width // 2) - (200 // 2), y, 200, 60)
+        self.text = text
+        self.action = action
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, (70, 100, 200), self.rect)
+        pygame.draw.rect(screen, (0, 0, 0), self.rect, 3)
+        text_surf = small_font.render(self.text, True, (255, 255, 255))
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        screen.blit(text_surf, text_rect)
+
+    def is_clicked(self, pos):
+        return self.rect.collidepoint(pos)
+
+# Главное меню
+class MainMenu:
+    def __init__(self, start_game, show_instructions, exit_game):
+        self.title = font.render("TETRIS", True, (98, 124, 208))
+        self.title_rect = self.title.get_rect(center=(width // 2, 100))
+        self.buttons = [
+            Button(300, "Play", start_game),
+            Button(400, "Controls", show_instructions),
+            Button(500, "Quit", exit_game)
+        ]
+
+    def draw(self, screen):
+        screen.fill((0, 0, 0))
+        x_offset = (width // 2) - 90
+        screen.blit(self.title, self.title_rect.topleft)
+        for button in self.buttons:
+            button.draw(screen)
+        pygame.display.flip()
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            for button in self.buttons:
+                if button.is_clicked(event.pos):
+                    button.action()
+
+# Экран "Управление"
+class Controls:
+    def __init__(self, back_to_menu):
+        self.text_lines = [
+            "ЛКМ - поставить блок",
+            "ПКМ - вращать блок",
+            "A/D - двигать блок"
+        ]
+        self.back_button = Button(600, "Back", back_to_menu)
+
+    def draw(self, screen):
+        screen.fill((0, 0, 0))
+        y_offset = 250
+        for line in self.text_lines:
+            text_surf = small_font.render(line, True, (255, 255, 255))
+            text_rect = text_surf.get_rect(center=(width // 2, y_offset))
+            screen.blit(text_surf, text_rect)
+            y_offset += 50
+        self.back_button.draw(screen)
+        pygame.display.flip()
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and self.back_button.is_clicked(event.pos):
+            self.back_button.action()
+
+# Экран завершения игры
+class EndMenu:
+    def __init__(self, exit_game):
+        self.text = small_font.render(f"Final Score: {board.score}", True, (255, 255, 255))
+        self.exit_button = Button(500, "Quit", exit_game)
+
+    def draw(self, screen):
+        screen.fill((0, 0, 0))
+        text_rect = self.text.get_rect(center=(width // 2, 300))
+        screen.blit(self.text, text_rect)
+        self.exit_button.draw(screen)
+        pygame.display.flip()
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and self.exit_button.is_clicked(event.pos):
+            self.exit_button.action()
+
+# Функции управления меню
+def start_game():
+    global running, game_running
+    game_running = True
+    running = False
+
+def show_instructions():
+    global current_menu
+    current_menu = Controls(lambda: set_main_menu())
+
+def set_main_menu():
+    global current_menu
+    current_menu = main_menu
+
+def exit_game():
+    pygame.quit()
+    exit()
+
+main_menu = MainMenu(start_game, show_instructions, exit_game)
+current_menu = main_menu
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            exit_game()
+        current_menu.handle_event(event)
+    current_menu.draw(screen)
+    pygame.display.flip()
+    clock.tick(60)
+
+
+# Основной игровой цикл
 class Board:
     def __init__(self):
         self.num = -1
@@ -416,3 +542,14 @@ while running:
     clock.tick(fps)
     board.render(screen)
     pygame.display.flip()
+
+
+end_menu = EndMenu(exit_game)
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            exit_game()
+        end_menu.handle_event(event)
+    end_menu.draw(screen)
+    clock.tick(60)
